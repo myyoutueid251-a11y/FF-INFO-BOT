@@ -256,14 +256,14 @@ class InfoCommands(commands.Cog):
                     ])
                 embed.add_field(name="", value="\n".join(guild_info), inline=False)
                 embed.add_field(
-                    name="📌 JOIN : https://discord.gg/xtjxtM3upQ",
+                    name="📌 JOIN : https://discord.gg/rEcsTwUBsV",
                     value="",
                     inline=False
                 )
 
 
             embed.set_image(url=f"https://genprofile-24nr.onrender.com/api/profile_card?uid={uid}")
-            embed.set_footer(text="DEVELOPED BY KHUSHI •")
+            embed.set_footer(text="DEVELOPED BY SUMEDH •")
             
             await ctx.send(embed=embed)
 
