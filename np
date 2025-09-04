@@ -1,0 +1,78 @@
+import os
+import discord
+from discord.ext import commands
+import aiohttp
+from dotenv import load_dotenv
+from flask import Flask
+
+load_dotenv()
+
+TOKEN = os.getenv('TOKEN')
+PORT = int(os.getenv('PORT', 8080))
+
+# List of allowed Discord user IDs (as integers)
+ALLOWED_USERS = {
+    123456789012345678,  # Replace with actual Discord user IDs
+    987654321098765432,
+}
+
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+app = Flask(__name__)
+
+@bot.event
+async def on_ready():
+    print(f'Logged in as {bot.user}')
+
+def is_allowed_user(ctx):
+    return ctx.author.id in ALLOWED_USERS
+
+@bot.command()
+async def info(ctx, uid: str):
+    """Fetch Free Fire account info by UID and send an embed."""
+    if not is_allowed_user(ctx):
+        await ctx.send("Sorry, you are not authorized to use this command.")
+        return
+
+    url = f"https://free-fire-info-api.vercel.app/api/uid/{uid}"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                await ctx.send("Failed to fetch data. Please check the UID and try again.")
+                return
+            data = await resp.json()
+
+    if data.get('status') == 'error':
+        await ctx.send(f"Error: {data.get('message', 'Unknown error')}")
+        return
+
+    profile = data.get('profile', {})
+    level = profile.get('level', 'N/A')
+    rank = profile.get('rank', {}).get('rankName', 'N/A')
+    guild = profile.get('guild', {}).get('name', 'No Guild')
+    credit_score = profile.get('creditScore', 'N/A')
+    banned = profile.get('banned', False)
+
+    embed = discord.Embed(title=f"Free Fire Info for UID: {uid}", color=0x00ff00)
+    embed.add_field(name="Level", value=level, inline=True)
+    embed.add_field(name="Rank", value=rank, inline=True)
+    embed.add_field(name="Guild", value=guild, inline=True)
+    embed.add_field(name="Credit Score", value=credit_score, inline=True)
+    embed.add_field(name="Banned", value="Yes" if banned else "No", inline=True)
+    embed.set_footer(text="Data provided by free-fire-info-api")
+
+    await ctx.send(embed=embed)
+
+@app.route('/')
+def home():
+    return "Free Fire Info Bot is running."
+
+if __name__ == '__main__':
+    import threading
+
+    def run_flask():
+        app.run(host='0.0.0.0', port=PORT)
+
+    threading.Thread(target=run_flask).start()
+    bot.run(TOKEN)
